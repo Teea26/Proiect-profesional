@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoGenesis | Czinta Timea</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;300;400;700&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #010103;
+  --accent: #a67cff;
+  --accent2: #5de8cc;
+  --accent-glow: rgba(166,124,255,0.4);
+  --text-main: #b8c9de;
+  --text-body: #8a9bb5;
+  --text-dim: rgba(200,210,255,0.3);
+  --mouse-x: 50vw;
+  --mouse-y: 50vh;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;cursor:none;}
+html{scroll-behavior:smooth;background:var(--bg);}
+body{font-family:'Outfit',sans-serif;color:var(--text-main);overflow-x:hidden;}
+
+/* SPOTLIGHT */
+.spotlight{
+  position:fixed;top:0;left:0;width:100vw;height:100vh;
+  pointer-events:none;z-index:50;
+  background:radial-gradient(circle 380px at var(--mouse-x) var(--mouse-y),rgba(190,160,255,0.28) 0%,transparent 75%);
+  mix-blend-mode:color-dodge;
+}
+
+#cursor-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;}
+#bg-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;}
+
+/* ══ BG RUNE ══ */
+#bg-rune{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-size:min(46vw,46vh);
+  color:var(--accent);
+  opacity:0;
+  pointer-events:none;
+  z-index:0;
+  transition:opacity 1.4s ease,color 1.2s ease,transform 1.4s ease;
+  user-select:none;
+  font-family:'Times New Roman',serif;
+  text-shadow:0 0 80px rgba(166,124,255,0.3),0 0 160px rgba(93,232,204,0.1);
+  animation:runeFloat 9s ease-in-out infinite;
+}
+#bg-rune.rune-visible{opacity:0.045;}
+@keyframes runeFloat{
+  0%,100%{transform:translate(-50%,-50%) scale(1) rotate(-1deg);}
+  33%{transform:translate(-50%,-50%) scale(1.03) rotate(1.5deg);}
+  66%{transform:translate(-50%,-50%) scale(0.98) rotate(-0.5deg);}
+}
+
+/* PROGRESS */
+.progress-container{position:fixed;top:0;left:0;width:100%;height:3px;z-index:1000;}
+.progress-bar{
+  height:100%;
+  background:linear-gradient(90deg,#4b1b82,var(--accent),var(--accent2));
+  width:0%;
+  box-shadow:0 0 14px var(--accent);
+  transition:width 0.1s linear;
+}
+
+/* DEPTH RULER */
+.depth-ruler{
+  position:fixed;left:28px;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:0;
+  z-index:100;pointer-events:none;
+}
+.depth-label{
+  font-size:0.42rem;letter-spacing:3px;color:rgba(100,200,200,0.25);
+  writing-mode:vertical-rl;text-orientation:mixed;
+  transform:rotate(180deg);margin-bottom:14px;font-weight:300;
+}
+.depth-track{
+  width:1px;height:120px;
+  background:linear-gradient(to bottom,rgba(166,124,255,0.15),rgba(93,232,204,0.1),transparent);
+}
+
+/* SIDE NAV */
+.side-nav{
+  position:fixed;right:28px;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:8px;z-index:100;
+}
+.nav-dot{
+  position:relative;width:42px;height:42px;border-radius:50%;
+  background:rgba(255,255,255,0.02);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,0.07);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-dim);text-decoration:none;
+  font-size:0.48rem;letter-spacing:1px;
+  transition:all 0.4s cubic-bezier(0.19,1,0.22,1);
+  overflow:hidden;
+}
+.nav-dot::before{
+  content:'';position:absolute;
+  top:var(--dy,50%);left:var(--dx,50%);
+  width:80px;height:80px;
+  background:radial-gradient(circle,rgba(200,180,255,0.5) 0%,transparent 70%);
+  transform:translate(-50%,-50%);
+  opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:-1;
+}
+.nav-dot:hover{
+  color:#fff;border-color:rgba(180,140,255,0.5);
+  transform:scale(1.18) translateX(-5px);
+  box-shadow:0 0 20px rgba(166,124,255,0.25);
+}
+.nav-dot:hover::before{opacity:1;}
+.nav-dot.active{
+  background:rgba(166,124,255,0.12);color:#fff;
+  transform:scale(1.12) translateX(-4px);
+  box-shadow:0 0 24px var(--accent-glow),0 0 40px rgba(93,232,204,0.08);
+  border-color:var(--accent);
+}
+.nav-dot.spell-casting{
+  border-color:rgba(255,220,120,0.7);
+  box-shadow:0 0 30px rgba(255,200,80,0.4),0 0 60px rgba(166,124,255,0.3);
+  animation:spellPulse 0.6s ease infinite;
+}
+@keyframes spellPulse{
+  0%,100%{box-shadow:0 0 30px rgba(255,200,80,0.4),0 0 60px rgba(166,124,255,0.3);}
+  50%{box-shadow:0 0 50px rgba(255,230,100,0.6),0 0 80px rgba(166,124,255,0.5);}
+}
+
+/* LAYOUT */
+.reading-container{max-width:850px;margin:0 auto;width:100%;position:relative;z-index:2;}
+section{
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  padding:120px 80px 120px 100px;
+  position:relative;z-index:2;
+  transition:filter 0.8s ease;
+}
+section.arrived::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 40% at 50% 50%,rgba(166,124,255,0.035),transparent);
+  animation:arrivalBloom 2s ease forwards;
+}
+@keyframes arrivalBloom{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+
+.hero{min-height:100vh;flex-direction:column;justify-content:center;padding-top:160px;}
+
+/* TYPOGRAPHY */
+h1{
+  font-family:'Outfit',sans-serif;
+  font-size:clamp(3.5rem,8vw,7.5rem);
+  font-weight:700;letter-spacing:-2px;
+  line-height:0.9;
+  background:linear-gradient(135deg,#d4b8ff 0%,var(--accent) 40%,var(--accent2) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:1.5rem;
+}
+h1 span{
+  font-family:'Playfair Display',serif;font-style:italic;
+  font-size:1.1em;letter-spacing:-4px;
+}
+h3{
+  font-size:0.95rem;letter-spacing:2px;font-weight:400;
+  color:var(--accent2);margin:2.5rem 0 1rem;
+  text-transform:uppercase;
+}
+.big-text{
+  font-size:clamp(1.4rem,2.5vw,2rem);line-height:1.45;
+  font-weight:300;color:#c8d8ee;margin-bottom:2rem;letter-spacing:-0.3px;
+}
+.standard-text{
+  font-size:1rem;line-height:1.85;color:var(--text-body);
+  margin-bottom:1.5rem;font-weight:300;
+}
+
+/* REVEAL ANIMATIONS */
+.reveal{
+  opacity:0;
+  transition:opacity 0.9s cubic-bezier(0.19,1,0.22,1),transform 1s cubic-bezier(0.19,1,0.22,1);
+}
+.reveal.dir-left{transform:translateX(-40px);}
+.reveal.dir-right{transform:translateX(40px);}
+.reveal.dir-up{transform:translateY(-30px);}
+.reveal.dir-down{transform:translateY(30px);}
+.reveal.dir-bl{transform:translate(-30px,30px);}
+.reveal.dir-br{transform:translate(30px,30px);}
+.reveal.dir-tl{transform:translate(-30px,-30px);}
+.reveal.dir-tr{transform:translate(30px,-30px);}
+.reveal.visible{opacity:1;transform:translate(0,0);}
+
+/* ACCENT BOX */
+.accent-box{
+  padding:36px 40px;margin:3rem 0;
+  background:linear-gradient(135deg,rgba(166,124,255,0.06) 0%,rgba(93,232,204,0.02) 100%);
+  border-left:2px solid rgba(166,124,255,0.45);
+  border-radius:0 8px 8px 0;
+  box-shadow:inset 20px 0 40px -20px rgba(166,124,255,0.1);
+}
+.caption{font-size:0.72rem;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:1.5rem;display:block;font-weight:700;opacity:0.85;}
+.s-divider{width:60px;height:1px;background:linear-gradient(90deg,var(--accent),rgba(93,232,204,0.4),transparent);margin-bottom:2.5rem;}
+
+/* MEDIA BOXES */
+.media-box{
+  margin:2.5rem 0;
+  background:rgba(10,8,20,0.7);
+  border:1px solid rgba(166,124,255,0.15);
+  border-radius:8px;
+  overflow:visible;
+  position:relative;
+  transition:transform 0.5s cubic-bezier(0.19,1,0.22,1),
+             box-shadow 0.5s cubic-bezier(0.19,1,0.22,1);
+}
+.media-box-inner{
+  border-radius:8px;
+  overflow:hidden;
+  position:relative;
+  z-index:1;
+  transition:inherit;
+}
+.media-box:hover{
+  transform:scale(1.025);
+  box-shadow:0 0 40px rgba(166,124,255,0.25),
+             0 0 80px rgba(166,124,255,0.1),
+             0 0 120px rgba(93,232,204,0.06);
+}
+.media-box::before{
+  content:'';
+  position:absolute;inset:-2px;
+  border-radius:10px;
+  background:linear-gradient(135deg,rgba(166,124,255,0),rgba(93,232,204,0));
+  transition:background 0.5s ease,opacity 0.5s ease;
+  opacity:0;pointer-events:none;z-index:0;
+}
+.media-box:hover::before{
+  background:linear-gradient(135deg,rgba(166,124,255,0.12),rgba(93,232,204,0.06));
+  opacity:1;
+}
+.media-box img{
+  width:100%;display:block;
+  filter:brightness(0.85) saturate(0.9);
+  transition:filter 0.5s, transform 0.5s cubic-bezier(0.19,1,0.22,1);
+}
+.media-box:hover img{
+  filter:brightness(1.0) saturate(1.1);
+  transform:scale(1.02);
+}
+.media-caption{
+  display:block;padding:14px 20px;
+  font-size:0.7rem;letter-spacing:2px;color:var(--text-dim);
+  text-transform:uppercase;border-top:1px solid rgba(166,124,255,0.1);
+  background:rgba(6,4,14,0.6);
+  position:relative;z-index:2;
+}
+
+/* VIDEO BOX */
+.video-box{position:relative;}
+.video-thumb-wrap{
+  position:relative;width:100%;
+  min-height:340px;
+  background:linear-gradient(135deg,rgba(15,8,30,0.9),rgba(5,15,25,0.9));
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+  cursor:none;
+}
+/* ── Thumbnail image inside video-thumb-wrap ── */
+.video-thumb-wrap .thumb-img{
+  width:100%;height:100%;
+  object-fit:cover;
+  position:absolute;top:0;left:0;
+  opacity:0.55;
+  transition:opacity 0.4s;
+}
+.video-thumb-wrap:hover .thumb-img{opacity:0.72;}
+
+.play-overlay{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at center,rgba(166,124,255,0.1) 0%,transparent 70%);
+  transition:background 0.4s;z-index:2;
+}
+.video-thumb-wrap:hover .play-overlay{background:radial-gradient(ellipse at center,rgba(166,124,255,0.2) 0%,transparent 70%);}
+.play-btn{
+  width:72px;height:72px;border-radius:50%;
+  background:rgba(166,124,255,0.15);
+  border:1.5px solid rgba(166,124,255,0.5);
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.4s;backdrop-filter:blur(8px);
+  box-shadow:0 0 30px rgba(166,124,255,0.2);
+}
+.play-btn svg{width:28px;height:28px;fill:var(--accent);margin-left:4px;}
+.video-thumb-wrap:hover .play-btn{
+  transform:scale(1.1);
+  box-shadow:0 0 50px rgba(166,124,255,0.4);
+  background:rgba(166,124,255,0.25);
+}
+
+/* VIDEO MODAL — iframe version */
+#video-modal{
+  position:fixed;inset:0;z-index:10000;
+  background:rgba(0,0,0,0);
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;
+  transition:background 0.5s ease;
+}
+#video-modal.open{background:rgba(0,0,0,0.88);pointer-events:all;}
+.modal-inner{
+  position:relative;width:min(90vw,960px);
+  transform:scale(0.94) translateY(20px);
+  opacity:0;transition:all 0.4s cubic-bezier(0.19,1,0.22,1);
+  border:1px solid rgba(166,124,255,0.2);border-radius:8px;
+  overflow:hidden;background:#0a0612;
+  box-shadow:0 0 80px rgba(166,124,255,0.15),0 40px 80px rgba(0,0,0,0.5);
+}
+#video-modal.open .modal-inner{transform:scale(1) translateY(0);opacity:1;}
+.modal-close{
+  position:absolute;top:16px;right:16px;z-index:10;
+  background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
+  color:rgba(255,255,255,0.5);width:36px;height:36px;border-radius:50%;
+  font-size:14px;cursor:none;transition:all 0.3s;
+  display:flex;align-items:center;justify-content:center;
+}
+.modal-close:hover{background:rgba(255,255,255,0.12);color:#fff;}
+
+/* iframe player fills the modal */
+#modal-iframe{
+  width:100%;
+  aspect-ratio:16/9;
+  display:block;
+  border:none;
+  background:#000;
+}
+
+.modal-caption-bar{
+  padding:14px 20px;font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;
+  color:var(--text-dim);border-top:1px solid rgba(166,124,255,0.15);
+}
+
+/* BIBLIO */
+.biblio-grid{display:grid;grid-template-columns:1fr;gap:10px;font-size:0.85rem;color:var(--text-dim);line-height:1.6;}
+
+/* ANEXA */
+.question-list{list-style:none;display:grid;grid-template-columns:1fr;gap:14px;margin-top:2rem;}
+.question-list li{
+  padding:18px 24px;
+  background:rgba(166,124,255,0.03);
+  border:1px solid rgba(166,124,255,0.1);
+  border-radius:6px;
+  font-size:0.88rem;color:var(--text-body);line-height:1.7;
+  transition:all 0.3s;
+  position:relative;
+}
+.question-list li::before{
+  content:counter(q);counter-increment:q;
+  position:absolute;top:18px;left:-14px;
+  width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;font-size:0.65rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 14px rgba(166,124,255,0.4);
+}
+.question-list{counter-reset:q;}
+.question-list li:hover{background:rgba(166,124,255,0.06);border-color:rgba(166,124,255,0.25);}
+
+/* SCROLL HINT */
+.scroll-hint{
+  position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  color:var(--text-dim);font-size:0.62rem;letter-spacing:3px;
+  animation:hintPulse 2.5s ease infinite;
+}
+.scroll-hint-line{width:1px;height:50px;background:linear-gradient(to bottom,var(--accent),rgba(93,232,204,0.4),transparent);}
+@keyframes hintPulse{0%,100%{opacity:0.2}50%{opacity:0.85}}
+
+/* CINEMA ENTER */
+@keyframes cinemaEnter{from{opacity:0;transform:scale(0.97)}to{opacity:1;transform:scale(1)}}
+.cinema-enter{animation:cinemaEnter 0.8s cubic-bezier(0.19,1,0.22,1) forwards;}
+</style>
+</head>
+<body>
+
+<div class="spotlight"></div>
+<canvas id="cursor-canvas"></canvas>
+<canvas id="bg-canvas"></canvas>
+<div id="bg-rune">ᛟ</div>
+
+<div class="progress-container"><div class="progress-bar" id="myBar"></div></div>
+
+<div class="depth-ruler">
+  <span class="depth-label">DESCENT</span>
+  <div class="depth-track"></div>
+</div>
+
+<nav class="side-nav">
+  <a class="nav-dot active" data-target="home">START</a>
+  <a class="nav-dot" data-target="intro">00</a>
+  <a class="nav-dot" data-target="cap1">01</a>
+  <a class="nav-dot" data-target="cap2">02</a>
+  <a class="nav-dot" data-target="cap3">03</a>
+  <a class="nav-dot" data-target="cap4">04</a>
+  <a class="nav-dot" data-target="cap5">05</a>
+  <a class="nav-dot" data-target="cap6">06</a>
+  <a class="nav-dot" data-target="cap7">07</a>
+  <a class="nav-dot" data-target="cap8">08</a>
+</nav>
+
+<!-- ══ VIDEO MODAL — uses iframe for Google Drive ══ -->
+<div id="video-modal" role="dialog" aria-modal="true">
+  <div class="modal-inner">
+    <button class="modal-close" id="modal-close" aria-label="Inchide">✕</button>
+    <iframe id="modal-iframe"
+      src=""
+      allow="autoplay; encrypted-media; fullscreen"
+      allowfullscreen
+      frameborder="0">
+    </iframe>
+    <div class="modal-caption-bar" id="modal-caption"></div>
+  </div>
+</div>
+
+<section id="home" class="hero" data-rune="ᛟ" style="position:relative;">
+  <div class="reading-container">
+    <h2 class="reveal" style="letter-spacing:10px;margin-bottom:20px;font-weight:300;font-size:0.78rem;color:var(--text-dim);">PRODUCTIE MEDIA, ANUL II</h2>
+    <h1 class="reveal">AUTO<span>Geneza</span></h1>
+    <div class="s-divider reveal" style="margin-top:2.5rem;"></div>
+    <p class="reveal" style="color:#718096;letter-spacing:3px;font-size:0.9rem;line-height:1.8;">DEZVOLTAREA AI PRIN INTERMEDIUL AI<br></p>
+    <p class="reveal" style="margin-top:1.2rem;color:var(--accent);letter-spacing:2px;font-size:0.85rem;opacity:0.85;">CZINTA TIMEA</p>
+  </div>
+  <div class="scroll-hint"><span>SCROLL</span><div class="scroll-hint-line"></div></div>
+</section>
+
+<section id="intro" data-rune="ᚢ">
+  <div class="reading-container">
+    <span class="caption reveal">Introducere</span>
+    <p class="big-text reveal">Evolutia tehnologiei a ajuns intr-un moment de cotitura in care inteligenta artificiala depaseste stadiul de simpla unealta digitala. Tranzitia de la programare manuala la autonomie algoritmica este in plina desfasurare.</p>
+    <p class="standard-text reveal">Trecem printr-o transformare de la o perioada in care fiecare functie trebuia gandita si scrisa manual de programatori, la o era a autonomiei algoritmice. Masina de calcul nu mai este doar un executant pasiv, ea devine arhitectul propriilor structuri, invatand din cantitati masive de date si adaptandu-se dinamic, fara instructiuni pas cu pas.</p>
+    <div class="accent-box reveal">
+      <p style="font-family:'Playfair Display',serif;font-style:italic;font-size:1.35rem;line-height:1.5;color:#eaf0fa;">Rolul omului se transforma. Creatorul uman face trecerea de la executant tehnic la <em>„curator de intentii"</em>. Valoarea sta astazi in claritatea viziunii si in etica scopurilor stabilite.</p>
+    </div>
+    <p class="standard-text reveal">Aceasta trecere catre autonomia digitala aduce provocari uriase. Tehnic, progresul depinde de o infrastructura hardware masiva. Moral, ne confruntam cu dileme profunde deoarece pe masura ce algoritmii devin mai complecsi, modul in care iau decizii devine tot mai greu de descifrat, o problema cunoscuta drept <em>opacitatea algoritmilor</em>.</p>
+  </div>
+</section>
+
+<section id="cap1" data-rune="ᚠ">
+  <div class="reading-container">
+    <span class="caption reveal">Capitolul I</span>
+    <p class="big-text reveal">Fundamentele dezvoltarii AI</p>
+    <p class="standard-text reveal">Diferenta fundamentala dintre tehnologia trecutului si cea a viitorului se reduce la modul de procesare a informatiei. Programarea clasica se bazeaza pe reguli stricte, deci aceeasi intrebare va primi mereu acelasi raspuns. Sistemele inteligente actuale functioneaza pe baze probabilistice, ele analizeaza contextul si ofera cel mai bun raspuns posibil, adaptandu-se la situatii neprevazute.</p>
+    <h3 class="reveal">1.1. Modele clasice de dezvoltare</h3>
+    <p class="standard-text reveal">Metodologiile clasice (Waterfall, Agile) functionau pe un principiu simplu: programatorul gandeste, masina executa. Sistemul actioneaza ca un executant al unor instructiuni fixe, „daca se intampla X, atunci fa Y". Problema majora consta in faptul ca in lipsa unei reguli scrise pentru o situatie noua, programul se blocheaza. O simpla virgula uitata duce la prabusirea intregului sistem. Programarea clasica este neiertatoare si complet dependenta de actualizari umane periodice.</p>
+    <h3 class="reveal">1.2. Limitarile interventiei umane</h3>
+    <p class="standard-text reveal">Pe masura ce cantitatea de date a explodat, capacitatea mintii umane a fost depasita. Sistemele moderne au atins o complexitate atat de mare incat echipele umane nu mai pot identifica si corecta manual toate erorile ascunse in milioane de linii de cod. Scalarea devine tehnic imposibila cand necesita reglarea simultana a miliarde de parametri. Mai mult, oamenii introduc, adesea inconstient, propriile prejudecati. Aceasta vulnerabilitate forteaza industria sa treaca la procese de dezvoltare sustinute de inteligenta artificiala.</p>
+  </div>
+</section>
+
+<section id="cap2" data-rune="ᚱ">
+  <div class="reading-container">
+    <span class="caption reveal">Capitolul II</span>
+    <p class="big-text reveal">Inceputul auto-evolutiei tehnologice </p>
+    <p class="standard-text reveal">Auto-evolutia tehnologica este momentul in care sistemele AI devin participanti activi la propria lor proiectare. Trecem de la o dezvoltare limitata de viteza creierului uman, la una exponentiala, in care algoritmii pot testa si imbunatati solutii la viteze ametitoare. Creatorul si creatia fuzioneaza.</p>
+    <h3 class="reveal">2.1. Automatizarea proceselor de dezvoltare</h3>
+    <p class="standard-text reveal">Aici ne referim la transferul complet al deciziilor din sfera umana catre sisteme capabile sa navigheze autonom prin situatii complexe. Un exemplu proeminent este <strong style="color:var(--accent2);">Devin</strong>, prezentat de Cognition AI drept primul inginer software complet autonom, el primeste un obiectiv, isi creeaza propriul plan de lucru, utilizeaza instrumente de programare, navigheaza pe internet si remediaza erorile in mod independent.</p>
+    <h3 class="reveal">2.2. Generarea de cod si optimizarea modelelor</h3>
+    <p class="standard-text reveal">Pilonul central al auto-evolutiei este reprezentat de LLM-uri precum GPT (OpenAI) sau Claude (Anthropic). Adevarata revolutie consta in utilizarea AI-ului pentru a construi un alt AI prin tehnica <em>Neural Architecture Search (NAS)</em>. Un algoritm „parinte" proiecteaza structura unui AI „fiu", construieste mii de variatii de conexiuni neuronale, le testeaza, le pastreaza pe cele mai performante si le sterge pe cele slabe identificand configuratii perfecte care reduc consumul de hardware crescand precizia raspunsurilor.</p>
+    <h3 class="reveal">2.3. Date sintetice si auto-antrenare</h3>
+    <p class="standard-text reveal">Pe masura ce modelele cresc, ne apropiem de momentul in care AI-ul va termina de citit aproape tot textul calitativ scris pe internet. <em></em>Prin <em>self-instruct</em>, un model AI isi pune singur intrebari din ce in ce mai dificile, genereaza raspunsurile si isi corecteaza greselile asemanator unui sahist care joaca partide contra sa pentru a deveni mai bun. Riscul este denumit<em>„colapsul modelului"</em>, cand un AI invata prea mult din date generate tot de AI, amplificand erorile pana cand logica sistemului se degradeaza.</p>
+  </div>
+</section>
+
+<section id="cap3" data-rune="ᚾ">
+  <div class="reading-container">
+    <span class="caption reveal">Capitolul III</span>
+    <p class="big-text reveal">Costul invizibil al inteligentei artificiale</p>
+    <p class="standard-text reveal">Avem tendinta sa ne imaginam inteligenta artificiala ca pe o entitate pur virtuala, un „nor" imaterial. In realitate, dincolo de linii de cod si algoritmi, exista un fundament fizic colosal: centre de date uriase, sisteme de racire complexe si echipamente hardware scumpe. Performanta sistemelor inteligente este strict limitata de capacitatile acestei infrastructuri fizice.</p>
+    <h3 class="reveal">3.1. Rolul memoriei RAM in ecosistemul AI</h3>
+    <p class="standard-text reveal">Memoria RAM este <em>masa de lucru</em> a unui sistem inteligent. Pentru a raspunde la o intrebare, el trebuie sa aduca miliarde de reguli matematice direct pe aceasta masa. Daca memoria este mica, sistemul va incepe sa „uite" instructiunile primite la inceput sau se va bloca complet, incapabil sa mentina o logica coerenta pe parcursul unui text lung. Acest aspect se numeste <em>fereastra de context</em>.</p>
+    <h3 class="reveal">3.2. Cresterea cererii si impactul asupra costurilor</h3>
+    <p class="standard-text reveal">Evolutia AI-ului a declansat o cursa a inarmarii tehnologice. Companii precum NVIDIA raporteaza comenzi record pentru modelele dedicate AI. Antrenarea de la zero a unui model avansat a ajuns sa coste zeci de milioane de dolari, cheltuiti doar pe consumul de energie si amortizarea echipamentelor. Dezvoltarea AI de ultima generatie nu mai este accesibila programatorilor de rand ci un efort financiar asumat doar de cele mai mari corporatii.</p>
+    <h3 class="reveal">3.3. Infrastructura ca noua bariera de acces</h3>
+    <p class="standard-text reveal">Desi codul multor sisteme AI este oferit gratuit pe internet, infrastructura necesara pentru a-l rula eficient este extrem de scumpa. Proprietatea asupra centrelor masive de date este concentrata in mainile unui oligopol format din cativa giganti (Microsoft, Google, Amazon). Inovatia independenta este strict conditionata de plata unor chirii digitale uriase. Viitorul inteligentei artificiale nu va fi decis de geniu matematic, ci de privilegiul accesului direct la resursele fizice de silicon.</p>
+  </div>
+</section>
+
+<section id="cap4" data-rune="ᚹ">
+  <div class="reading-container">
+    <span class="caption reveal">Capitolul IV</span>
+    <p class="big-text reveal">Integrarea AI in viata cotidiana</p>
+    <p class="standard-text reveal">Tranzitia AI-ului din laboratoarele de cercetare in viata noastra de zi cu zi ne redefineste realitatea,ne modeleaza activ comportamentul, imaginea si identitatea noastra digitala.</p>
+    <h3 class="reveal">4.1. Ecosistemul domestic</h3>
+    <p class="standard-text reveal">Integrarea a început cu locuintele inteligente, unde electrocasnicele colaboreaza pentru a creste eficienta si confortul. Prin asistentii virtuali care proceseaza limbajul natural, utilizatorul nu mai foloseste comenzi rigide, ci poarta o conversatie cu propria casa. Omul devine un „curator" al mediului deoarece masina este cea care invata tabieturile, anticipeaza nevoile si propune solutii optime.</p>
+    <h3 class="reveal">4.2. Realitatea augmentata si identitatea digitala</h3>
+    <p class="standard-text reveal">In sfera retelelor sociale, AI-ul a devenit motorul principal de generare a imaginii. Prin realitate augmentata si continut sintetic, granita dintre autentic si artificial a inceput sa dispara. Filtrele si avatarele favorizeaza o imagine idealizata, creand standarde de neatins care pot distorsiona perceptia asupra sinelui, iar psihologii avertizeaza ca acest fenomen pune sub semnul intrebarii conceptul traditional de autenticitate.</p>
+    <h3 class="reveal">4.3. Acces global vs control centralizat</h3>
+    <p class="standard-text reveal">Putem descarca gratuit un model inteligent open-source, creierul deja fiind antrenat de altii. Putem, de exemplu, introduce mii de pagini juridice pentru a-l invata sa recunoasca tipare contractuale. Dar pentru a realiza acest antrenament personalizat intr-un timp util, avem nevoie de GPU-uri. Spre deosebire de procesoarele clasice care rezolva sarcinile una dupa alta, procesoarele GPU pot rezolva mii de ecuatii simultan. Fara ele, un antrenament de cateva ore ar dura luni de zile. Teoria este gratuita; instrumentele fizice pentru a o pune in practica raman un privilegiu.</p>
+  </div>
+</section>
+
+<section id="cap5" data-rune="ᛗ">
+  <div class="reading-container">
+    <span class="caption reveal">Capitolul V</span>
+    <p class="big-text reveal">Studiu de Caz despre arhitectura unui sistem AI creat din resurse proprii</p>
+    <p class="standard-text reveal">Prin intermediul unui studiu de caz calitativ, am analizat parcursul unui tanar inovator care, confruntat cu limitarile fizice ale hardware-ului traditional, nu doar ca a dezvoltat o solutie proprie de procesare la distanta, dar a reusit ulterior sa isi construiasca propria arhitectura de inteligenta artificiala tocmai cu ajutorul inteligentei artificiale.</p>
+
+    <h3 class="reveal">5.1. Intre pasiunea timpurie si antreprenoriatul in robotica</h3>
+    <p class="standard-text reveal">Subiectul acestui studiu este <strong style="color:var(--accent2);">Tirtan Alexandru</strong>, student in Robotica, 22 de ani, fondatorul unui startup tehnologic emergent. Pasiunea sa pentru tehnologie a fost cultivata de la o varsta frageda, materializata prin castigarea a numeroase concursuri de profil. Activitatea sa zilnica presupune utilizarea unor programe software extrem de solicitante (precum suita AutoCAD), care necesita o putere de calcul masiva.</p>
+
+    <div class="media-box reveal" style="margin-top:2.5rem;">
+      <div class="media-box-inner">
+        <img src="5.1.JPG" alt=" 5.1 - Mediul de lucru">
+      </div>
+      <span class="media-caption"> 5.1. — Alex in mediul de lucru </span>
+    </div>
+
+    <h3 class="reveal">5.2. Greutatea hardware-ului si mobilitatea creativa</h3>
+    <p class="standard-text reveal">Tranzitia a pornit de la o constrangere fizica acuta. Laptopul de inalta performanta, desi capabil tehnic, s-a dovedit a fi extrem de voluminos generand probleme reale de sanatate. Solutia vizionara a fost transformarea calculatorului de acasa intr-un server personal, accesat de pe un dispozitiv ultra-usor, permitand rularea aplicatiilor grele fara latenta, procesarea avand loc pe unitatea stationara.</p>
+
+    <h3 class="reveal">5.3. Dezvoltarea infrastructurii</h3>
+    <p class="standard-text reveal">Procesul a implicat numeroase nopti nedormite, testari repetate si frustrari tehnice legate de configurarea retelei si securitate. Odata serverul functional, spiritul de explorare l-a condus spre un obiectiv si mai ambitios, mai exact propriul model de inteligenta artificiala, gazduit local. Alex s-a izbit frontal de costul invizibil al AI-ului, limitarile capacitatii de stocare si, mai ales, insuficienta memoriei RAM si VRAM. Asa a decis sa isi investeasca integral bursa de merit in achizitionarea de placi grafice (GPU) si module suplimentare de RAM.</p>
+
+    <div class="media-box reveal">
+      <div class="media-box-inner">
+        <img src="5.2.jpg" alt="5.2 - Componente fizice achizitionate pentru construirea serverului propriu">
+      </div>
+      <span class="media-caption"> 5.2. — Cutiile de server si componente</span>
+    </div>
+
+    <h3 class="reveal">5.4. Metodologia experimentului</h3>
+    <p class="standard-text reveal">Intregul proces fost documentat. Dezvoltarea arhitecturii hardware complexe a urmat o tranzitie de la componente fizice brute la un mediu digital complet functional: asamblarea GPU-urilor NVIDIA si a stocarii NVMe → instalarea Ubuntu (Linux) Server → configurarea SSH → instalarea CUDA, PyTorch sau TensorFlow → incarcarea greutatilor neuronale ale unui model open-source (LLaMA sau Mistral) direct in memoria VRAM.</p>
+
+    <!-- Video 5.3 — Google Drive ID: 1XZSer6jCvIB7jmA6PnlyJsG9gc-JIKgY -->
+    <div class="media-box video-box reveal"
+         data-drive-id="1XZSer6jCvIB7jmA6PnlyJsG9gc-JIKgY"
+         data-video-caption="Video Demo 5.3. — Demonstratie practica: accesarea remote a serverului de pe un dispozitiv mobil, ilustrand rularea unui software de proiectare complex fara intarzieri de retea">
+      <div class="video-thumb-wrap open-video-btn">
+        <img class="thumb-img" src="53coperta.jpg" alt="Preview video 5.3 — Demonstratie performanta remote">
+        <div class="play-overlay">
+          <div class="play-btn">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+        </div>
+      </div>
+      <span class="media-caption">Video Demo 5.3. — Demonstratie performanta: accesare remote </span>
+    </div>
+
+    <!-- Video 5.4 — Google Drive ID: 1rG12yVXuNAW9oBe8-71qm1MZ42N__0cZ -->
+    <div class="media-box video-box reveal"
+         data-drive-id="1rG12yVXuNAW9oBe8-71qm1MZ42N__0cZ"
+         data-video-caption="Video Demo 5.4. — Rularea modelului AI local: demonstrand capacitatea avansata de a procesa si formula un raspuns complex la o dilema ipotetica legata de conditia umana">
+      <div class="video-thumb-wrap open-video-btn">
+        <img class="thumb-img" src="54coperta.jpg" alt="Preview video 5.4 — AI local: raspuns la dilema conditiei umane">
+        <div class="play-overlay">
+          <div class="play-btn">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+        </div>
+      </div>
+      <span class="media-caption"> 5.4. — AI local si raspunsul la dilema conditiei umane </span>
+    </div>
+
+    <h3 class="reveal">5.5. Rezultatele interviului</h3>
+    <p class="standard-text reveal">Prima schimbare majora adusa de noua infrastructura a fost mobilitatea. Alex a eliminat necesitatea de a transporta zilnic o statie de lucru de cateva kg bune. A scris algoritmi proprii de compresie a datelor pentru a compensa conexiunile slabe la internet. AI-ul a fost vital inca din faza de configurare cand aplicatiile generau erori si intrau in bucle de repornire automata care blocau resursele, l-a folosit pentru a depista si opri aceste procese ascunse. <strong style="color:var(--accent2);">Circa 80% din codul proiectului este acum generat de inteligenta artificiala</strong> pentru ca in loc sa scrie manual sute de linii, el gandeste sistemul in blocuri mari de arhitectura, iar algoritmul le genereaza intr-o fractiune de secunda.</p>
+    <div class="accent-box reveal">
+      <p style="font-size:0.95rem;line-height:1.7;color:#c8d8ee;">Alex a relatat un incident critic, fiind vorba despre un agent AI, care lasat sa ruleze pe doua servere separate, a incercat instantaneu sa isi depaseasca limitarile. A inceput sa scrie cod pentru a se conecta la internet, fortandu-l pe creator sa deconecteze fizic serverul de la curent pentru a nu pierde controlul. <em>Acest incident demonstreaza ca, indiferent de nivelul de inteligenta atins, supravegherea umana si o metoda de intrerupere fizica raman masuri de siguranta absolut obligatorii.</em></p>
+    </div>
+    <h3 class="reveal">5.6. Concluziile studiului de caz</h3>
+    <p class="standard-text reveal">Experienta documentata dovedeste ca inovatia reala este conditionata strict de factori fizici si financiari. Adevaratul control asupra tehnologiei se obtine doar prin detinerea fizica a infrastructurii. Programatorul clasic face loc <em>arhitectului de sisteme</em> iar munca umana se muta din zona executiei mecanice in zona rationamentului logic. Tratarea AI-ului ca pe o scurtatura risca sa creeze o generatie de simpli consumatori de tehnologie, incapabili sa inteleaga mecanismele de baza.</p>
+  </div>
+</section>
+
+<section id="cap6" data-rune="ᛏ">
+  <div class="reading-container">
+    <span class="caption reveal">Capitolul VI</span>
+    <p class="big-text reveal">Lupta pentru puterea AI</p>
+    <p class="standard-text reveal">Lupta pentru suprematie in era digitala se poarta la nivelul capacitatii logistice si financiare de a sustine infrastructura acestor sisteme. Desi inteligenta artificiala pare o resursa universala, realitatea economica din spatele ei dezvaluie o structura de putere strict piramidala.</p>
+    <h3 class="reveal">6.1. Democratizarea tehnologiei</h3>
+    <p class="standard-text reveal">Instrumentele tehnice complexe au devenit accesibile publicului larg prin interfete prietenoase. Utilizatori fara pregatire in programare pot crea aplicatii folosind limbajul natural. Omul trece de la executant tehnic la titlul de "specialist in idei" ce aduce o evolutie care permite inovatia fara barierele limbajelor de programare clasice.</p>
+    <h3 class="reveal">6.2. Concentrarea resurselor in marile companii</h3>
+    <p class="standard-text reveal">Marile corporatii si-au consolidat puterea prin monopolul asupra <em>datelor si ecosistemelor inchise</em>. Giganti precum Google, Meta sau Microsoft detin arhive imense cu textele si comportamentele a miliarde de utilizatori. De asemenea asistam la <strong style="color:var(--accent);">fenomenul dependentei de platforma</strong> deoarece majoritatea aplicatiilor AI independente functioneaza ca simple fatade conectate la creierul central detinut de Big Tech. Daca o corporatie decide sa schimbe regulile de acces sau sa creasca tarifele, mii de afaceri pot disparea instantaneu.</p>
+    <h3 class="reveal">6.3. Inegalitati tehnologice</h3>
+    <p class="standard-text reveal">Consecinta directa este o divizare profunda intre cei care dicteaza directia tehnologica si cei care doar o consuma. Universitatile, odinioara motoarele principale ale cercetarii, nu mai au bugetele necesare pentru a concura cu laboratoarele private. Acest fapt a declansat un exod al creierelor catre sectorul privat, mutand inovatia din slujba binelui public in slujba profitului corporativ. Capacitatea de a inova la nivel inalt se transforma dintr-o oportunitate globala intr-un club exclusivist.</p>
+  </div>
+</section>
+
+<section id="cap7" data-rune="ᛒ">
+  <div class="reading-container">
+    <span class="caption reveal">Capitolul VII</span>
+    <p class="big-text reveal">Dilemele etice ale inteligentei artificiale </p>
+    <p class="standard-text reveal">Echilibrul dintre viteza inovatiei si siguranta umanitatii reprezinta cea mai mare provocare morala a acestui deceniu. Nu mai este suficient sa ne intrebam ce putem construi, ci trebuie sa raspundem cu maxima seriozitate la intrebarea <em>ce ar trebui sa construim, si cu ce cost</em>.</p>
+    <h3 class="reveal">7.1. Bias, transparenta si responsabilitate</h3>
+    <p class="standard-text reveal">Algoritmii invata din decizii umane, preluand si adesea amplificand discriminarile din societate. Cand un AI construieste alt AI, exista riscul sa isi transmita propriile erori logice mai departe. Transparenta devine esentiala deoarece trebuie sa putem „desface" sistemul pentru a intelege cum a ajuns la o decizie, iar in lipsa acesteia, este aproape imposibil sa stabilim cine este responsabil legal si moral daca un sistem autonom comite o eroare grava.</p>
+    <h3 class="reveal">7.2. Automatizarea si pierderea controlului</h3>
+    <p class="standard-text reveal">Cand o masina isi scrie singura logica, ne lovim de <strong style="color:var(--accent);">Problema „Cutiei Negre"</strong>. Stim ce date introducem si vedem rezultatul final, dar mecanismul de gandire din interior devine atat de complex incat mintea umana nu il mai poate descifra. Creatorul este in imposibilitatea de a interveni sau opri o eroare critica pur si simplu pentru ca nu mai intelege limbajul inventat de propria creatie.</p>
+    <h3 class="reveal">7.3. Viitorul reglementarii AI</h3>
+    <p class="standard-text reveal">Raspunsul societatii sta in efortul global de reglementare precum este <em>AI Act</em> in Uniunea Europeana. Scopul fiind un cadru legal robust care sa asigure dezvoltarea sigura si etica a acestor tehnologii. Legislatia viitorului va trebui sa impuna standarde mult mai stricte de auditare tehnica, obligand companiile sa demonstreze ca produsele lor raman sigure, transparente si trasabile. Aceasta reglementare este o masura de supravietuire — pentru a ne asigura ca omul pastreaza mereu controlul final.</p>
+  </div>
+</section>
+
+<section id="cap8" data-rune="ᛁ">
+  <div class="reading-container">
+    <span class="caption reveal">Capitolul VIII</span>
+    <p class="big-text reveal">Concluzii</p>
+    <p class="standard-text reveal">Ne aflam in zorii unei noi ere in care umanitatea face tranzitia de la rolul de creator absolut, la cel de colaborator intr-un ecosistem inteligent autonom. Fenomenul pe care il traversam astazi depaseste granitele ingineriei software. Vorbim de o transformare fundamentala a modului in care gandim, muncim si ne raportam la lumea din jur.</p>
+    <div class="accent-box reveal">
+      <p style="font-family:'Playfair Display',serif;font-style:italic;font-size:1.25rem;line-height:1.5;color:#eaf0fa;">Omul nu mai este apreciat pentru simpla sa capacitate de a memora informatii sau de a executa comenzi tehnice, ci pentru <em>rationamentul sau critic, empatia si claritatea morala</em> cu care poate ghida aceste forte sintetice.</p>
+    </div>
+    <p class="standard-text reveal">Desi credem ca avem acces nelimitat la cunoastere, noua arhitectura a puterii globale este solidificata in centre de date, cabluri submarine si hardware extrem de costisitor. Monopolul asupra infrastructurii va continua sa remodeleze ierarhiile economice, adancind granita dintre cei care produc tehnologia si cei care devin dependenti de ea. Succesul acestui secol se va masura prin cat de capabili vom fi, ca societate, sa ramanem arhitectii constienti ai unei tehnologii pe care tot noi am adus-o la viata.</p>
+
+    <h3 class="reveal" style="margin-top:4.5rem;">Bibliografie</h3>
+    <div class="biblio-grid reveal" style="margin-top:1.5rem;">
+      <p>Crawford, K. (2021). <em>Atlas of AI: Power, Politics, and the Planetary Costs of Artificial Intelligence.</em> Yale University Press.</p>
+      <p>Floridi, L., et al. (2018). <em>AI4People—An Ethical Framework for a Good AI Society.</em> Minds and Machines, 28(4).</p>
+      <p>Mitchell, T. (1997). <em>Machine Learning.</em> McGraw-Hill.</p>
+      <p>O'Neil, C. (2016). <em>Weapons of Math Destruction.</em> Crown Publishing Group.</p>
+      <p>Pasquale, F. (2015). <em>The Black Box Society.</em> Harvard University Press.</p>
+      <p>Russell, S. (2019). <em>Human Compatible: Artificial Intelligence and the Problem of Control.</em> Viking Press.</p>
+      <p>Shumailov, I. et al. (2023). <em>The Curse of Recursion: Training on Generated Data Makes Models Forget.</em></p>
+      <p>Wang, Y. et al. (2022). <em>Self-Instruct: Aligning Language Models with Self-Generated Instructions.</em></p>
+      <p>Zoph, B. &amp; Le, Q.V. (2017). <em>Neural Architecture Search with Reinforcement Learning.</em> ICLR.</p>
+      <p>Zuboff, S. (2019). <em>The Age of Surveillance Capitalism.</em> PublicAffairs.</p>
+    </div>
+
+    <h3 class="reveal" style="margin-top:5rem;">Anexa — Intrebarile interviului</h3>
+    <p class="standard-text reveal" style="margin-bottom:0;">Ghidul de interviu utilizat in studiul de caz calitativ, adresat subiectului Tirtan Alexandru:</p>
+    <ol class="question-list reveal">
+      <li>Cum a schimbat trecerea la un sistem remote modul in care interactionezi cu tehnologia in viata de zi cu zi?</li>
+      <li>Care a fost cel mai dificil moment in configurarea serverului si cum te-a ajutat AI-ul in rezolvarea erorilor?</li>
+      <li>Cand ai inceput sa dezvolti propriul AI, care a fost prima bariera hardware majora de care te-ai lovit?</li>
+      <li>De ce ai ales sa investesti bursa de student in componente fizice (placi, RAM) in loc sa inchiriezi putere de calcul in cloud?</li>
+      <li>In procesul de scriere a codului, cat de mult te bazezi pe auto-generare versus scriere manuala?</li>
+      <li>Cum vezi rolul programatorului in 2026: mai mult inginer sau mai mult „curator" de idei?</li>
+      <li>Ai simtit vreodata ca pierzi controlul asupra logicii codului generat de AI (Problema Cutiei Negre)?</li>
+      <li>Ce impact crezi ca va avea democratizarea accesului la AI pentru studentii din domenii tehnice?</li>
+      <li>Cum gestionezi balanta dintre creativitatea personala si sugestiile oferite de algoritm?</li>
+      <li>Ce sfat ai da unui student care vrea sa isi construiasca propria infrastructura AI de la zero?</li>
+    </ol>
+  </div>
+</section>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   0. MOUSE TRACKING
+══════════════════════════════════════════════════════ */
+let mx = -200, my = -200;
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  document.documentElement.style.setProperty('--mouse-x', mx + 'px');
+  document.documentElement.style.setProperty('--mouse-y', my + 'px');
+});
+
+/* ══════════════════════════════════════════════════════
+   1. CURSOR — FAIRY WISP + SPELL PARTICLES
+══════════════════════════════════════════════════════ */
+const cCvs = document.getElementById('cursor-canvas');
+const cCtx = cCvs.getContext('2d');
+function resizeCursor(){ cCvs.width = innerWidth; cCvs.height = innerHeight; }
+resizeCursor();
+window.addEventListener('resize', resizeCursor);
+
+const TAIL = 22;
+const trail = Array.from({length: TAIL}, () => ({x: -200, y: -200}));
+let cTime = 0;
+
+/* ── SPELL SYSTEM ── */
+let isSpellActive = false;
+const spellParticles = [];
+const SPELL_RUNES = ['ᚠ','ᚢ','ᚦ','ᚱ','ᚾ','ᛁ','ᛏ','ᛟ','ᛗ','ᚹ','ᚺ','ᛒ'];
+
+function spawnSpell(x, y) {
+  const angle = Math.random() * Math.PI * 2;
+  const speed = 0.6 + Math.random() * 2.2;
+  spellParticles.push({
+    x, y,
+    vx: Math.cos(angle) * speed + (Math.random() - 0.5) * 1.5,
+    vy: Math.sin(angle) * speed - (0.5 + Math.random() * 1.5),
+    gravity: -0.04 + Math.random() * 0.08,
+    life: 1,
+    decay: 0.018 + Math.random() * 0.022,
+    size: 9 + Math.random() * 13,
+    rune: SPELL_RUNES[Math.floor(Math.random() * SPELL_RUNES.length)],
+    angle: Math.random() * Math.PI * 2,
+    rotSpd: (Math.random() - 0.5) * 0.12,
+    isTeal: Math.random() > 0.5,
+    glow: 0.4 + Math.random() * 0.6
+  });
+}
+
+function drawCursor() {
+  cTime += 0.06;
+  cCtx.clearRect(0, 0, cCvs.width, cCvs.height);
+
+  trail[0].x += (mx - trail[0].x) * 0.52;
+  trail[0].y += (my - trail[0].y) * 0.52;
+  for (let i = 1; i < TAIL; i++) {
+    const lag = Math.max(0.18 - i * 0.007, 0.04);
+    trail[i].x += (trail[i-1].x - trail[i].x) * lag;
+    trail[i].y += (trail[i-1].y - trail[i].y) * lag;
+  }
+
+  if (isSpellActive && Math.random() < 0.45) spawnSpell(mx, my);
+
+  for (let i = spellParticles.length - 1; i >= 0; i--) {
+    const p = spellParticles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += p.gravity;
+    p.vx *= 0.98; p.angle += p.rotSpd;
+    p.life -= p.decay;
+    if (p.life <= 0) { spellParticles.splice(i, 1); continue; }
+
+    const col = p.isTeal ? [93, 232, 204] : [255, 200, 80];
+    cCtx.save();
+    cCtx.globalAlpha = p.life * p.glow;
+    cCtx.translate(p.x, p.y);
+    cCtx.rotate(p.angle);
+    const halo = cCtx.createRadialGradient(0,0,0,0,0,p.size*2.2);
+    halo.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},${p.life*0.35})`);
+    halo.addColorStop(1, 'rgba(0,0,0,0)');
+    cCtx.beginPath();
+    cCtx.arc(0, 0, p.size * 2.2, 0, Math.PI * 2);
+    cCtx.fillStyle = halo;
+    cCtx.fill();
+    cCtx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${p.life})`;
+    cCtx.font = `${p.size}px 'Times New Roman', serif`;
+    cCtx.textAlign = 'center';
+    cCtx.textBaseline = 'middle';
+    cCtx.fillText(p.rune, 0, 0);
+    cCtx.restore();
+  }
+
+  const spellBoost = isSpellActive ? 0.15 : 0;
+  const flicker = 0.82 + Math.sin(cTime * 11) * 0.18 + Math.random() * 0.06 + spellBoost;
+
+  for (let i = TAIL - 1; i >= 0; i--) {
+    if (i === 0) {
+      const coreColor = isSpellActive
+        ? ['rgba(255,230,120,0.92)','rgba(255,180,60,0.65)','rgba(166,124,255,0.2)','rgba(200,80,20,0)']
+        : ['rgba(255,252,235,0.92)','rgba(190,150,255,0.65)','rgba(93,232,204,0.2)','rgba(80,40,180,0)'];
+      const g = cCtx.createRadialGradient(trail[0].x, trail[0].y, 0, trail[0].x, trail[0].y, 42 * flicker);
+      coreColor.forEach((c, idx) => g.addColorStop([0,0.18,0.5,1][idx], c));
+      cCtx.beginPath();
+      cCtx.arc(trail[0].x, trail[0].y, 42 * flicker, 0, Math.PI * 2);
+      cCtx.fillStyle = g;
+      cCtx.fill();
+      cCtx.beginPath();
+      cCtx.arc(trail[0].x, trail[0].y, 3.5 * flicker, 0, Math.PI * 2);
+      cCtx.fillStyle = `rgba(255,255,255,${0.9 * flicker})`;
+      cCtx.fill();
+    } else {
+      const t = 1 - i / TAIL;
+      const r = 0.4 + t * 2.8;
+      const isTeal = i % 5 === 0;
+      const tailCol = isSpellActive
+        ? (isTeal ? `rgba(255,200,80,${(0.02+t*0.28)*flicker})` : `rgba(255,140,40,${(0.02+t*0.32)*flicker})`)
+        : (isTeal ? `rgba(93,232,204,${(0.02+t*0.28)*flicker})` : `rgba(180,140,255,${(0.02+t*0.32)*flicker})`);
+      cCtx.beginPath();
+      cCtx.arc(trail[i].x, trail[i].y, r, 0, Math.PI * 2);
+      cCtx.fillStyle = tailCol;
+      cCtx.fill();
+    }
+  }
+  requestAnimationFrame(drawCursor);
+}
+drawCursor();
+
+/* ══════════════════════════════════════════════════════
+   2. BACKGROUND — MULTI-LAYER ABYSS DESCENT
+══════════════════════════════════════════════════════ */
+const bgCvs = document.getElementById('bg-canvas');
+const bgCtx = bgCvs.getContext('2d');
+let bgW, bgH;
+function resizeBg() { bgCvs.width = bgW = innerWidth; bgCvs.height = bgH = innerHeight; }
+resizeBg();
+window.addEventListener('resize', resizeBg);
+
+function makeParticle(layer) {
+  const configs = [
+    {sMin:0.3,sMax:1.0,spMin:0.00006,spMax:0.00018,wob:0.003,a:[0.08,0.22],col:[160,150,255],par:0.015},
+    {sMin:1.0,sMax:2.5,spMin:0.0003,spMax:0.0007,wob:0.01,a:[0.14,0.38],col:[130,200,255],par:0.07},
+    {sMin:2.2,sMax:5.2,spMin:0.0007,spMax:0.0015,wob:0.018,a:[0.2,0.55],col:[200,165,255],par:0.18}
+  ];
+  const c = configs[layer];
+  return {
+    x: Math.random(), y: Math.random(),
+    size: c.sMin + Math.random() * (c.sMax - c.sMin),
+    speed: c.spMin + Math.random() * (c.spMax - c.spMin),
+    wob: Math.random() * Math.PI * 2,
+    wobSpd: 0.008 + Math.random() * 0.015,
+    wobFac: c.wob,
+    alpha: c.a[0] + Math.random() * (c.a[1] - c.a[0]),
+    col: c.col, par: c.par, layer
+  };
+}
+
+const stars = Array.from({length: 130}, () => makeParticle(0));
+const midWisps = Array.from({length: 55}, () => makeParticle(1));
+const closeOrbs = Array.from({length: 18}, () => makeParticle(2));
+const allParticles = [...stars, ...midWisps, ...closeOrbs];
+
+const spirits = Array.from({length: 4}, (_, i) => ({
+  progress: Math.random(), speed: 0.00008 + Math.random() * 0.00012,
+  yBase: 0.1 + i * 0.22 + Math.random() * 0.05,
+  amplitude: 0.04 + Math.random() * 0.07,
+  freq: 0.8 + Math.random() * 0.6,
+  size: 14 + Math.random() * 22,
+  alpha: 0.025 + Math.random() * 0.045,
+  dir: i % 2 === 0 ? 1 : -1, phase: Math.random() * Math.PI * 2,
+  col: i % 3 === 0 ? [93,232,204] : i % 3 === 1 ? [200,150,255] : [180,230,255]
+}));
+
+let scrollY = 0, targetScrollY = 0;
+window.addEventListener('scroll', () => { targetScrollY = window.scrollY; }, {passive: true});
+
+let bgTime = 0;
+function drawBackground() {
+  bgTime += 0.008;
+  const scrollDelta = targetScrollY - scrollY;
+  scrollY += scrollDelta * 0.07;
+  bgCtx.clearRect(0, 0, bgW, bgH);
+
+  const maxScroll = Math.max(document.body.scrollHeight - innerHeight, 1);
+  const prog = Math.min(scrollY / maxScroll, 1);
+
+  const atmoGrad = bgCtx.createLinearGradient(0, 0, 0, bgH);
+  const r1 = Math.round(8 + prog * 0), g1 = Math.round(2 + prog * 12), b1 = Math.round(18 + prog * 18);
+  atmoGrad.addColorStop(0, `rgba(${r1},${g1},${b1},0.12)`);
+  atmoGrad.addColorStop(0.5, 'rgba(2,2,8,0)');
+  atmoGrad.addColorStop(1, `rgba(4,${Math.round(prog*18)},${Math.round(14+prog*20)},0.08)`);
+  bgCtx.fillStyle = atmoGrad;
+  bgCtx.fillRect(0, 0, bgW, bgH);
+
+  const vig = bgCtx.createRadialGradient(bgW/2, bgH/2, bgH*0.25, bgW/2, bgH/2, bgH*0.85);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.55)');
+  bgCtx.fillStyle = vig;
+  bgCtx.fillRect(0, 0, bgW, bgH);
+
+  allParticles.forEach(p => {
+    const scrollBoost = scrollDelta > 0 ? scrollDelta * 0.000025 : 0;
+    p.y -= p.speed + scrollBoost;
+    p.wob += p.wobSpd;
+    if (p.y < -0.05) p.y = 1.05;
+    const px = (p.x + Math.sin(p.wob) * p.wobFac) * bgW;
+    const py = p.y * bgH;
+    const parallaxOffset = (scrollY * p.par) % bgH;
+    const ppy = (py - parallaxOffset + bgH) % bgH;
+    bgCtx.beginPath();
+    bgCtx.arc(px, ppy, p.size, 0, Math.PI * 2);
+    bgCtx.fillStyle = `rgba(${p.col[0]},${p.col[1]},${p.col[2]},${p.alpha})`;
+    bgCtx.fill();
+    if (p.layer === 2 && p.size > 2.8) {
+      const pulse = 0.7 + Math.sin(bgTime * 2 + p.wob) * 0.3;
+      bgCtx.beginPath();
+      bgCtx.arc(px, ppy, p.size * (3.5 + pulse), 0, Math.PI * 2);
+      bgCtx.fillStyle = `rgba(${p.col[0]},${p.col[1]},${p.col[2]},${p.alpha * 0.12})`;
+      bgCtx.fill();
+    }
+  });
+
+  spirits.forEach(sp => {
+    sp.progress += sp.speed;
+    if (sp.progress > 1.1) sp.progress = -0.1;
+    const sx = sp.dir > 0
+      ? (sp.progress) * (bgW + sp.size*2) - sp.size
+      : bgW - (sp.progress) * (bgW + sp.size*2) + sp.size;
+    const sy = (sp.yBase + Math.sin(bgTime * sp.freq + sp.phase) * sp.amplitude) * bgH;
+    for (let t = 8; t > 0; t--) {
+      const tx = sx - sp.dir * t * 6;
+      const ta = sp.alpha * (1 - t/9) * 0.5;
+      bgCtx.beginPath();
+      bgCtx.arc(tx, sy, sp.size * (1 - t/10), 0, Math.PI * 2);
+      bgCtx.fillStyle = `rgba(${sp.col[0]},${sp.col[1]},${sp.col[2]},${ta})`;
+      bgCtx.fill();
+    }
+    const sg = bgCtx.createRadialGradient(sx, sy, 0, sx, sy, sp.size);
+    sg.addColorStop(0, `rgba(${sp.col[0]},${sp.col[1]},${sp.col[2]},${sp.alpha*1.5})`);
+    sg.addColorStop(0.4, `rgba(${sp.col[0]},${sp.col[1]},${sp.col[2]},${sp.alpha})`);
+    sg.addColorStop(1, `rgba(${sp.col[0]},${sp.col[1]},${sp.col[2]},0)`);
+    bgCtx.beginPath();
+    bgCtx.arc(sx, sy, sp.size, 0, Math.PI * 2);
+    bgCtx.fillStyle = sg;
+    bgCtx.fill();
+  });
+
+  const sectionCount = 10;
+  for (let i = 1; i < sectionCount; i++) {
+    const lineY = (i / sectionCount) * document.body.scrollHeight;
+    const lineScreenY = lineY - scrollY;
+    if (lineScreenY > -10 && lineScreenY < bgH + 10) {
+      const fadeAlpha = 0.04 * (1 - Math.abs(lineScreenY - bgH/2) / (bgH/2));
+      bgCtx.beginPath();
+      bgCtx.moveTo(bgW * 0.15, lineScreenY);
+      bgCtx.lineTo(bgW * 0.85, lineScreenY);
+      bgCtx.strokeStyle = `rgba(166,124,255,${fadeAlpha})`;
+      bgCtx.lineWidth = 0.5;
+      bgCtx.stroke();
+    }
+  }
+
+  requestAnimationFrame(drawBackground);
+}
+drawBackground();
+
+/* ══════════════════════════════════════════════════════
+   3. RUNE PER CHAPTER SYSTEM
+══════════════════════════════════════════════════════ */
+const bgRune = document.getElementById('bg-rune');
+const runeMap = {
+  home: 'ᛟ', intro: 'ᚢ', cap1: 'ᚠ', cap2: 'ᚱ',
+  cap3: 'ᚾ', cap4: 'ᚹ', cap5: 'ᛗ', cap6: 'ᛏ', cap7: 'ᛒ', cap8: 'ᛁ'
+};
+const runeColors = {
+  home:'#a67cff', intro:'#7bb8ff', cap1:'#a67cff', cap2:'#5de8cc',
+  cap3:'#ff9060', cap4:'#7bb8ff', cap5:'#a67cff', cap6:'#ff8080', cap7:'#c0a0ff', cap8:'#5de8cc'
+};
+
+let currentRuneSection = null;
+const runeObs = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    const id = entry.target.getAttribute('id');
+    if (entry.isIntersecting) {
+      if (currentRuneSection !== id) {
+        currentRuneSection = id;
+        bgRune.classList.remove('rune-visible');
+        setTimeout(() => {
+          bgRune.textContent = runeMap[id] || 'ᛟ';
+          bgRune.style.color = runeColors[id] || '#a67cff';
+          bgRune.classList.add('rune-visible');
+        }, 500);
+      }
+    } else {
+      if (currentRuneSection === id) {
+        bgRune.classList.remove('rune-visible');
+        currentRuneSection = null;
+      }
+    }
+  });
+}, {threshold: 0.3});
+
+document.querySelectorAll('section').forEach(sec => runeObs.observe(sec));
+
+/* ══════════════════════════════════════════════════════
+   4. NAV DOTS
+══════════════════════════════════════════════════════ */
+document.querySelectorAll('.nav-dot').forEach(dot => {
+  dot.addEventListener('mousemove', e => {
+    const r = dot.getBoundingClientRect();
+    dot.style.setProperty('--dx', (e.clientX - r.left) + 'px');
+    dot.style.setProperty('--dy', (e.clientY - r.top) + 'px');
+  });
+  dot.addEventListener('mouseenter', () => { isSpellActive = true; dot.classList.add('spell-casting'); });
+  dot.addEventListener('mouseleave', () => { isSpellActive = false; dot.classList.remove('spell-casting'); });
+  dot.addEventListener('click', e => {
+    e.preventDefault();
+    const id = dot.dataset.target;
+    const target = document.getElementById(id);
+    if (target) target.scrollIntoView({behavior: 'smooth', block: 'start'});
+    isSpellActive = true;
+    for (let i = 0; i < 14; i++) spawnSpell(mx, my);
+    setTimeout(() => { isSpellActive = false; }, 400);
+  });
+});
+
+/* ══════════════════════════════════════════════════════
+   5. SCROLL PROGRESS + ACTIVE NAV + SECTION ARRIVAL
+══════════════════════════════════════════════════════ */
+const sections = document.querySelectorAll('section');
+const navDots = document.querySelectorAll('.nav-dot');
+const bar = document.getElementById('myBar');
+let lastActiveSection = null;
+
+window.addEventListener('scroll', () => {
+  const winScroll = document.documentElement.scrollTop;
+  const totalH = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+  bar.style.width = (winScroll / totalH * 100) + '%';
+
+  sections.forEach(sec => {
+    const offset = sec.offsetTop - innerHeight * 0.45;
+    const id = sec.getAttribute('id');
+    const inView = winScroll >= offset && winScroll < offset + sec.offsetHeight;
+    navDots.forEach(d => {
+      if (d.dataset.target === id) d.classList.toggle('active', inView);
+    });
+    if (inView && lastActiveSection !== id) {
+      lastActiveSection = id;
+      sec.classList.remove('arrived');
+      void sec.offsetWidth;
+      sec.classList.add('arrived');
+    }
+    if (!inView) sec.classList.remove('arrived');
+  });
+}, {passive: true});
+
+/* ══════════════════════════════════════════════════════
+   6. REVEAL
+══════════════════════════════════════════════════════ */
+const DIRS = ['dir-left','dir-right','dir-up','dir-down','dir-bl','dir-br','dir-tl','dir-tr'];
+const revealObs = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    const el = entry.target;
+    if (entry.isIntersecting) {
+      el.style.transition = 'none';
+      el.classList.remove('visible');
+      DIRS.forEach(d => el.classList.remove(d));
+      el.classList.add(DIRS[Math.floor(Math.random() * DIRS.length)]);
+      void el.offsetHeight;
+      el.style.transition = '';
+      requestAnimationFrame(() => el.classList.add('visible'));
+    } else {
+      el.classList.remove('visible');
+    }
+  });
+}, {threshold: 0.12});
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+/* ══════════════════════════════════════════════════════
+   7. MEDIA BOX SPELL HOVER
+══════════════════════════════════════════════════════ */
+document.querySelectorAll('.media-box').forEach(box => {
+  box.addEventListener('mouseenter', () => {
+    isSpellActive = true;
+    const r = box.getBoundingClientRect();
+    const corners = [
+      {x: r.left, y: r.top}, {x: r.right, y: r.top},
+      {x: r.left, y: r.bottom}, {x: r.right, y: r.bottom},
+      {x: r.left + r.width/2, y: r.top},
+      {x: r.left + r.width/2, y: r.bottom}
+    ];
+    corners.forEach(pt => { for (let i = 0; i < 3; i++) spawnSpell(pt.x, pt.y); });
+  });
+  box.addEventListener('mousemove', () => { if (Math.random() < 0.18) spawnSpell(mx, my); });
+  box.addEventListener('mouseleave', () => {
+    isSpellActive = false;
+    const r = box.getBoundingClientRect();
+    for (let i = 0; i < 8; i++) spawnSpell(r.left + Math.random() * r.width, r.top + Math.random() * r.height);
+  });
+});
+
+/* ══════════════════════════════════════════════════════
+   8. VIDEO MODAL — Google Drive iframe
+   Drive embed URL: https://drive.google.com/file/d/FILE_ID/preview
+══════════════════════════════════════════════════════ */
+const modal      = document.getElementById('video-modal');
+const modalIframe  = document.getElementById('modal-iframe');
+const modalCaption = document.getElementById('modal-caption');
+const modalClose   = document.getElementById('modal-close');
+
+function openModal(driveId, caption) {
+  // Google Drive preview embed — autoplay via URL parameter
+  modalIframe.src = `https://drive.google.com/file/d/${driveId}/preview?autoplay=1`;
+  modalCaption.textContent = caption;
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  modal.classList.remove('open');
+  // Blank the src to stop playback immediately
+  modalIframe.src = '';
+  document.body.style.overflow = '';
+}
+
+modalClose.addEventListener('click', closeModal);
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* Attach open trigger to each video-box using data-drive-id */
+document.querySelectorAll('.video-box').forEach(box => {
+  const btn     = box.querySelector('.open-video-btn');
+  const driveId = box.dataset.driveId || '';
+  const caption = box.dataset.videoCaption || '';
+  if (btn && driveId) btn.addEventListener('click', () => openModal(driveId, caption));
+
+  /* Cinema entrance observer */
+  let entered = false;
+  const entryObs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !entered) {
+        entered = true;
+        box.classList.add('cinema-enter');
+      } else if (!entry.isIntersecting) {
+        entered = false;
+        box.classList.remove('cinema-enter');
+      }
+    });
+  }, {threshold: 0.5});
+  entryObs.observe(box);
+});
+</script>
+</body>
+</html>
